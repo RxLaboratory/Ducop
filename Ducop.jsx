@@ -158,6 +158,7 @@ function applyCompParams()
 		for (var i in comps)
 		{
 			var comp = comps[i];
+			if (comp.duration < oldDurations[i]) continue;
 			for (var j = 1;j<=comp.layers.length;j++)
 			{
 				var layer = comp.layer(j);

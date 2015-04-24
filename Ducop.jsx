@@ -29,35 +29,29 @@ function ducop(obj)
 function applyCompParams()
 {
     var comps = [];
+	var oldDurations = [];
     
     if (selectedButton.value)
      {    
          var recursive = includePrecomps.value;
         //RECUP LES COMPS SELECTIONNEES
-        //si comp active, prendre les comps sélectionnées en tant que calques
-        if (app.project.activeItem != null && app.project.activeItem instanceof CompItem)
-        {
-            comps.push(app.project.activeItem)
-            var layers = [];
-            //si récursif
-            if (recursive) for (i = 1;i<=app.project.activeItem.layers.length;i++)
-            {
-                layers.push(app.project.activeItem.layer(i));
-            }
-            //et on filtre pour récup les compos
-            for (i in layers)
-            {
-                if (layers[i].source instanceof CompItem) comps.push(layers[i].source);
-            }
-        }
-        else
-        {
-            for (i=0;i<app.project.selection;i++)
-            {
-                alert(app.project.selection[i].name);
-                if (app.project.selection[i] instanceof CompItem) comps.push(app.project.selection[i]);
-            }    
-        }
+        //prendre les comps sélectionnées en tant que calques
+		if (app.project.activeItem != null && app.project.activeItem instanceof CompItem)
+		{
+			comps.push(app.project.activeItem)
+			var layers = [];
+			//si récursif
+			if (recursive) for (i = 1;i<=app.project.activeItem.layers.length;i++)
+			{
+				if (app.project.activeItem.layer(i).source instanceof CompItem) comps.push(layers[i].source);
+			}
+		}
+		
+		//prendre les comps sélectionnées dans le projet
+		for (i=0;i<app.project.selection;i++)
+		{
+			if (app.project.selection[i] instanceof CompItem) comps.push(app.project.selection[i]);
+		}    
 
         //SI RECURSIF, PRENDRE LES PRECOMPS
         if (recursive) 
@@ -80,10 +74,10 @@ function applyCompParams()
 
     //SI AU FINAL ON A RIEN, RIEN A FAIRE
     if (comps.length == 0) return;
+	
     //ET ON APPIQUE LES PARAMS
-    
     app.beginUndoGroup("Duduf Comp Params");
-    for (i in comps)
+    for (var i in comps)
     {
         var c = comps[i];
         
@@ -134,7 +128,11 @@ function applyCompParams()
     //FPS
     if (fpsButton.value) c.frameRate = parseFloat(fps.text.split(",").join("."));
     //DURATION
-    if (durationButton.value) c.duration = parseInt(duration.text)*c.frameDuration;
+    if (durationButton.value)
+	{
+		oldDurations.push(c.duration);
+		c.duration = parseInt(duration.text)*c.frameDuration;
+	}
     //SHUTTER
     if (shutterAngleButton.value)
     {
@@ -153,7 +151,22 @@ function applyCompParams()
     }
         
     }
-    app.endUndoGroup();
+    
+	//ADAPT LAYER DURATIONS
+	if (adaptLayerDurations.value && durationButton.value)
+	{
+		for (var i in comps)
+		{
+			var comp = comps[i];
+			for (var j = 1;j<=comp.layers.length;j++)
+			{
+				var layer = comp.layer(j);
+				if (layer.outPoint >= oldDurations[i]) layer.outPoint = comp.duration;
+			}
+		}
+	}
+	
+	app.endUndoGroup();
 }
 
 //fonction qui sélectionne les sous compos de manière récursive
@@ -180,7 +193,7 @@ function getPreComps(comp)
     //================= UI============================
     //===============================================
 	{
-     function addHGroup(conteneur){
+    function addHGroup(conteneur){
 	var groupe = conteneur.add("group");
 	groupe.alignChildren = ["fill","fill"];
 	groupe.orientation = "row";
@@ -200,7 +213,7 @@ function getPreComps(comp)
         
         
     var fenetre = obj instanceof Panel ? obj : new Window("window","Ducopa",undefined,{resizeable:true});
-    fenetre.alignChildren = ["left", "top"];
+    fenetre.alignChildren = ["fill", "top"];
     fenetre.spacing  = 1;
     fenetre.margins = 2;
     
@@ -243,32 +256,32 @@ function getPreComps(comp)
     };
 
     var widthGroup = addHGroup(fenetre);
-    widthGroup.alignChildren = ["left","center"];
+    widthGroup.alignChildren = ["fill","center"];
     var widthButton = widthGroup.add("checkbox",undefined,"Width");
     widthButton.size = [100,25];
     widthButton.value = false;
     var widthValues = addHGroup(widthGroup);
-    widthValues.enabled = false;
     var width = widthValues.add("edittext",undefined,"1920");
     width.size = [75,25];
+	width.enabled = false;
     var widthCompButton = widthValues.add("button",undefined,"<");
     widthCompButton.size = [25,25];
     widthCompButton.helpTip = "Get from active comp";
-    widthCompButton.onClick = function ()  { if (app.project.activeItem != null) width.text = app.project.activeItem.width; };
+    widthCompButton.onClick = function ()  { if (app.project.activeItem != null) width.text = app.project.activeItem.width; widthButton.value = true; width.enabled = true; };
 
     var heightGroup = addHGroup(fenetre);
-    heightGroup.alignChildren = ["left","center"];
+    heightGroup.alignChildren = ["fill","center"];
     var heightButton = heightGroup.add("checkbox",undefined,"Height");
     heightButton.size = [100,25];
     heightButton.value = false;
     var heightValues = addHGroup(heightGroup);
-    heightValues.enabled = false;
     var height = heightValues.add("edittext",undefined,"1080");
+	height.enabled = false;
     height.size = [75,25];
     var heightCompButton = heightValues.add("button",undefined,"<");
     heightCompButton.size = [25,25];
     heightCompButton.helpTip = "Get from active comp";
-    heightCompButton.onClick = function ()  { if (app.project.activeItem != null) height.text = app.project.activeItem.height; };
+    heightCompButton.onClick = function ()  { if (app.project.activeItem != null) height.text = app.project.activeItem.height; heightButton.value = true; height.enabled = true; };
     
     var keepAspectGroup = addHGroup(fenetre);
     var keepAspectRatio = keepAspectGroup.add("checkbox",undefined,"Keep Aspect Ratio");
@@ -277,15 +290,15 @@ function getPreComps(comp)
     widthButton.onClick = function () { if (keepAspectRatio.value && widthButton.value && heightButton.value) heightButton.value = false; heightValues.enabled = heightButton.value; widthValues.enabled = widthButton.value; };
     
     var pixelAspectGroup = addHGroup(fenetre);
-    pixelAspectGroup.alignChildren = ["left","center"];
+    pixelAspectGroup.alignChildren = ["fill","center"];
     var pixelAspectButton = pixelAspectGroup.add("checkbox",undefined,"Pixel Aspect");
     pixelAspectButton.size = [100,25];
     pixelAspectButton.value = false;
     pixelAspectButton.onClick = function () { pixelAspectValues.enabled = pixelAspectButton.value; };
     var pixelAspectValues = addHGroup(pixelAspectGroup);
-    pixelAspectValues.enabled = false;
     var pixelAspect = pixelAspectValues.add("dropdownlist",undefined,["Square (1)","NTSC (0.91)","NTSC wide (1.21)","PAL (1.09)","PAL wide (1.46)","HDV/DVCPRO 720 (1.33)","DVCPRO 1080 (1.5)","Anamorphic (2)"]);
-    pixelAspect.size = [75,25];
+    pixelAspect.enabled = false;
+	pixelAspect.size = [75,25];
     pixelAspect.selection = 0;
     var pixelAspectCompButton = pixelAspectValues.add("button",undefined,"<");
     pixelAspectCompButton.size = [25,25];
@@ -301,69 +314,71 @@ function getPreComps(comp)
             if (app.project.activeItem.pixelAspect == 1.5) pixelAspect.selection = 6;
             if (app.project.activeItem.pixelAspect == 2) pixelAspect.selection = 7;
             }
+			pixelAspectButton.value = true;
+			pixelAspect.enabled = true; 
         };
     
-     var fpsGroup = addHGroup(fenetre);
-    fpsGroup.alignChildren = ["left","center"];
+    var fpsGroup = addHGroup(fenetre);
+    fpsGroup.alignChildren = ["fill","center"];
     var fpsButton = fpsGroup.add("checkbox",undefined,"FPS");
     fpsButton.size = [100,25];
     fpsButton.value = false;
     fpsButton.onClick = function () { fpsValues.enabled = fpsButton.value; };
     var fpsValues = addHGroup(fpsGroup);
-    fpsValues.enabled = false;
     var fps = fpsValues.add("edittext",undefined,"24");
     fps.size = [75,25];
     fps.selection = 0;
+	fps.enabled = false;
     var fpsCompButton = fpsValues.add("button",undefined,"<");
     fpsCompButton.size = [25,25];
     fpsCompButton.helpTip = "Get from active comp";
-    fpsCompButton.onClick = function ()  { if (app.project.activeItem != null) fps.text = app.project.activeItem.frameRate; };
+    fpsCompButton.onClick = function ()  { if (app.project.activeItem != null) fps.text = app.project.activeItem.frameRate; fpsButton.value = true; fps.enabled = true; };
     
     var durationGroup = addHGroup(fenetre);
-    durationGroup.alignChildren = ["left","center"];
+    durationGroup.alignChildren = ["fill","center"];
     var durationButton = durationGroup.add("checkbox",undefined,"Duration");
     durationButton.size = [100,25];
     durationButton.value = false;
     durationButton.onClick = function () { durationValues.enabled = durationButton.value; };
     var durationValues = addHGroup(durationGroup);
-    durationValues.enabled = false;
     var duration = durationValues.add("edittext",undefined,"100");
     duration.size = [75,25];
     duration.selection = 0;
+	duration.enabled = false;
     var durationCompButton = durationValues.add("button",undefined,"<");
     durationCompButton.size = [25,25];
     durationCompButton.helpTip = "Get from active comp";
-    durationCompButton.onClick = function ()  { if (app.project.activeItem != null) duration.text = app.project.activeItem.duration/app.project.activeItem.frameDuration; };
+    durationCompButton.onClick = function ()  { if (app.project.activeItem != null) duration.text = app.project.activeItem.duration/app.project.activeItem.frameDuration; durationButton.value = true; duration.enabled = true; };
     
     var shutterAngleGroup = addHGroup(fenetre);
-    shutterAngleGroup.alignChildren = ["left","center"];
+    shutterAngleGroup.alignChildren = ["fill","center"];
     var shutterAngleButton = shutterAngleGroup.add("checkbox",undefined,"Shutter Angle");
     shutterAngleButton.size = [100,25];
     shutterAngleButton.value = false;
     shutterAngleButton.onClick = function () { shutterAngleValues.enabled = shutterAngleButton.value; };
     var shutterAngleValues = addHGroup(shutterAngleGroup);
-    shutterAngleValues.enabled = false;
     var shutterAngle = shutterAngleValues.add("edittext",undefined,"180");
     shutterAngle.size = [75,25];
+	shutterAngle.enabled = false;
     var shutterAngleCompButton = shutterAngleValues.add("button",undefined,"<");
     shutterAngleCompButton.size = [25,25];
     shutterAngleCompButton.helpTip = "Get from active comp";
-    shutterAngleCompButton.onClick = function ()  { if (app.project.activeItem != null) shutterAngle.text = app.project.activeItem.shutterAngle; };
+    shutterAngleCompButton.onClick = function ()  { if (app.project.activeItem != null) shutterAngle.text = app.project.activeItem.shutterAngle; shutterAngleButton.value = true; shutterAngle.enabled = true; };
     
     var shutterPhaseGroup = addHGroup(fenetre);
-    shutterPhaseGroup.alignChildren = ["left","center"];
+    shutterPhaseGroup.alignChildren = ["fill","center"];
     var shutterPhaseButton = shutterPhaseGroup.add("checkbox",undefined,"Shutter Phase");
     shutterPhaseButton.size = [100,25];
     shutterPhaseButton.value = false;
     shutterPhaseButton.onClick = function () { shutterPhaseValues.enabled = shutterPhaseButton.value; };
     var shutterPhaseValues = addHGroup(shutterPhaseGroup);
-    shutterPhaseValues.enabled = false;
     var shutterPhase = shutterPhaseValues.add("edittext",undefined,"-90");
     shutterPhase.size = [75,25];
+	shutterPhase.enabled = false;
     var shutterPhaseCompButton = shutterPhaseValues.add("button",undefined,"<");
     shutterPhaseCompButton.size = [25,25];
     shutterPhaseCompButton.helpTip = "Get from active comp";
-    shutterPhaseCompButton.onClick = function ()  { if (app.project.activeItem != null) shutterPhase.text = app.project.activeItem.shutterPhase; };
+    shutterPhaseCompButton.onClick = function ()  { if (app.project.activeItem != null) shutterPhase.text = app.project.activeItem.shutterPhase; shutterPhaseButton.value = true; shutterPhase.enabled = true; };
     
     var applyGroup = addHGroup(fenetre);
     var compsGroup = addVGroup(applyGroup);
@@ -376,14 +391,19 @@ function getPreComps(comp)
     var includePrecomps = applyOKGroup.add("checkbox",undefined,"Include Precomps");
     selectedButton.onClick = function () { includePrecomps.enabled = selectedButton.value; };
     allButton.onClick = function () { includePrecomps.enabled = selectedButton.value; };
-    var applyButton = applyOKGroup.add("button",undefined,"Apply");
+	var adaptLayerDurations = applyOKGroup.add("checkbox",undefined,"> Layers durations");
+	adaptLayerDurations.value = true;
+	
+    var applyButton = fenetre.add("button",undefined,"Apply");
     applyButton.onClick = applyCompParams;
+	applyButton.alignment = ["fill","fill"];
     
     var versionGroup = addHGroup(fenetre);
-    versionGroup.alignment = ["fill","top"];
-    versionGroup.add("statictext",undefined,"www.duduf.net");
-    var version = versionGroup.add("statictext",undefined,"v1.0");
-    version.alignment = ["right","top"];
+    versionGroup.alignment = ["fill","bottom"];
+    var dudufURL = versionGroup.add("statictext",undefined,"www.duduf.net");
+	dudufURL.alignment = ["left","bottom"];
+    var version = versionGroup.add("statictext",undefined,"v1.2");
+    version.alignment = ["right","bottom"];
 
     //================= AFFICHAGE DE L'UI ============
     fenetre.layout.layout(true);

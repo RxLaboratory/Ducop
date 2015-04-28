@@ -162,7 +162,10 @@ function applyCompParams()
 			for (var j = 1;j<=comp.layers.length;j++)
 			{
 				var layer = comp.layer(j);
+				var locked = layer.locked;
+				layer.locked = false;
 				if (layer.outPoint >= oldDurations[i]) layer.outPoint = comp.duration;
+				layer.locked = locked;
 			}
 		}
 	}
@@ -287,15 +290,15 @@ function getPreComps(comp)
     var keepAspectGroup = addHGroup(fenetre);
     var keepAspectRatio = keepAspectGroup.add("checkbox",undefined,"Keep Aspect Ratio");
     keepAspectRatio.onClick = function () { if (keepAspectRatio.value && widthButton.value && heightButton.value) heightButton.value = false; heightValues.enabled = heightButton.value; widthValues.enabled = widthButton.value; };
-    heightButton.onClick = function () { if (keepAspectRatio.value && widthButton.value && heightButton.value) widthButton.value = false; heightValues.enabled = heightButton.value; widthValues.enabled = widthButton.value; };
-    widthButton.onClick = function () { if (keepAspectRatio.value && widthButton.value && heightButton.value) heightButton.value = false; heightValues.enabled = heightButton.value; widthValues.enabled = widthButton.value; };
+    heightButton.onClick = function () { if (keepAspectRatio.value && widthButton.value && heightButton.value) widthButton.value = false; height.enabled = heightButton.value; width.enabled = widthButton.value; };
+    widthButton.onClick = function () { if (keepAspectRatio.value && widthButton.value && heightButton.value) heightButton.value = false; height.enabled = heightButton.value; width.enabled = widthButton.value; };
     
     var pixelAspectGroup = addHGroup(fenetre);
     pixelAspectGroup.alignChildren = ["fill","center"];
     var pixelAspectButton = pixelAspectGroup.add("checkbox",undefined,"Pixel Aspect");
     pixelAspectButton.size = [100,25];
     pixelAspectButton.value = false;
-    pixelAspectButton.onClick = function () { pixelAspectValues.enabled = pixelAspectButton.value; };
+    pixelAspectButton.onClick = function () { pixelAspect.enabled = pixelAspectButton.value; };
     var pixelAspectValues = addHGroup(pixelAspectGroup);
     var pixelAspect = pixelAspectValues.add("dropdownlist",undefined,["Square (1)","NTSC (0.91)","NTSC wide (1.21)","PAL (1.09)","PAL wide (1.46)","HDV/DVCPRO 720 (1.33)","DVCPRO 1080 (1.5)","Anamorphic (2)"]);
     pixelAspect.enabled = false;
@@ -324,7 +327,7 @@ function getPreComps(comp)
     var fpsButton = fpsGroup.add("checkbox",undefined,"FPS");
     fpsButton.size = [100,25];
     fpsButton.value = false;
-    fpsButton.onClick = function () { fpsValues.enabled = fpsButton.value; };
+    fpsButton.onClick = function () { fps.enabled = fpsButton.value; };
     var fpsValues = addHGroup(fpsGroup);
     var fps = fpsValues.add("edittext",undefined,"24");
     fps.size = [75,25];
@@ -340,7 +343,7 @@ function getPreComps(comp)
     var durationButton = durationGroup.add("checkbox",undefined,"Duration");
     durationButton.size = [100,25];
     durationButton.value = false;
-    durationButton.onClick = function () { durationValues.enabled = durationButton.value; };
+    durationButton.onClick = function () { duration.enabled = durationButton.value; };
     var durationValues = addHGroup(durationGroup);
     var duration = durationValues.add("edittext",undefined,"100");
     duration.size = [75,25];
@@ -356,7 +359,7 @@ function getPreComps(comp)
     var shutterAngleButton = shutterAngleGroup.add("checkbox",undefined,"Shutter Angle");
     shutterAngleButton.size = [100,25];
     shutterAngleButton.value = false;
-    shutterAngleButton.onClick = function () { shutterAngleValues.enabled = shutterAngleButton.value; };
+    shutterAngleButton.onClick = function () { shutterAngle.enabled = shutterAngleButton.value; };
     var shutterAngleValues = addHGroup(shutterAngleGroup);
     var shutterAngle = shutterAngleValues.add("edittext",undefined,"180");
     shutterAngle.size = [75,25];
@@ -371,7 +374,7 @@ function getPreComps(comp)
     var shutterPhaseButton = shutterPhaseGroup.add("checkbox",undefined,"Shutter Phase");
     shutterPhaseButton.size = [100,25];
     shutterPhaseButton.value = false;
-    shutterPhaseButton.onClick = function () { shutterPhaseValues.enabled = shutterPhaseButton.value; };
+    shutterPhaseButton.onClick = function () { shutterPhase.enabled = shutterPhaseButton.value; };
     var shutterPhaseValues = addHGroup(shutterPhaseGroup);
     var shutterPhase = shutterPhaseValues.add("edittext",undefined,"-90");
     shutterPhase.size = [75,25];
@@ -403,7 +406,7 @@ function getPreComps(comp)
     versionGroup.alignment = ["fill","bottom"];
     var dudufURL = versionGroup.add("statictext",undefined,"www.duduf.net");
 	dudufURL.alignment = ["left","bottom"];
-    var version = versionGroup.add("statictext",undefined,"v1.2");
+    var version = versionGroup.add("statictext",undefined,"v1.21");
     version.alignment = ["right","bottom"];
 
     //================= AFFICHAGE DE L'UI ============
